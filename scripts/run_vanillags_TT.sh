@@ -1,6 +1,6 @@
 #! /bin/bash
 
-GPU_ID=2
+GPU_ID=3
 DATA_ROOT_DIR="/ssd2/zhiwen/projects/w_workspace/datasets/InstantSplat/collated_instantsplat_data/eval"
 DATASETS=(
     # mipnerf360
@@ -19,16 +19,16 @@ SCENES=(
     # Ignatius
     )
 
-N_VIEWS=(
-    3
-    6
-    9
-    12
-    24
-    # 50
-    # 100
-    # 150
+N_VIEWS=(    
     # 0
+    # 3
+    # 6
+    # 9
+    # 12
+    24
+    50
+    100
+    150
     )
 
 # increase iteration to get better metrics (e.g. gs_train_iter=5000)
@@ -61,7 +61,6 @@ for DATASET in "${DATASETS[@]}"; do
             -m ${MODEL_PATH}  \
             -r 1 \
             --n_views ${N_VIEW}  \
-            --iterations ${gs_train_iter} \
             --eval \
             "            
             # --scene ${SCENE} \
