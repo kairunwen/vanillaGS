@@ -19,6 +19,7 @@ from scene import Scene, GaussianModel
 from utils.general_utils import safe_state
 import uuid
 from tqdm import tqdm
+import time
 from utils.image_utils import psnr
 from argparse import ArgumentParser, Namespace
 from arguments import ModelParams, PipelineParams, OptimizationParams
@@ -29,6 +30,7 @@ except ImportError:
     TENSORBOARD_FOUND = False
 
 def training(dataset, opt, pipe, testing_iterations, saving_iterations, checkpoint_iterations, checkpoint, debug_from):
+    start_time = time.time()
     first_iter = 0
     tb_writer = prepare_output_and_logger(dataset)
     gaussians = GaussianModel(dataset.sh_degree)
@@ -49,20 +51,20 @@ def training(dataset, opt, pipe, testing_iterations, saving_iterations, checkpoi
     progress_bar = tqdm(range(first_iter, opt.iterations), desc="Training progress")
     first_iter += 1
     for iteration in range(first_iter, opt.iterations + 1):        
-        if network_gui.conn == None:
-            network_gui.try_connect()
-        while network_gui.conn != None:
-            try:
-                net_image_bytes = None
-                custom_cam, do_training, pipe.convert_SHs_python, pipe.compute_cov3D_python, keep_alive, scaling_modifer = network_gui.receive()
-                if custom_cam != None:
-                    net_image = render(custom_cam, gaussians, pipe, background, scaling_modifer)["render"]
-                    net_image_bytes = memoryview((torch.clamp(net_image, min=0, max=1.0) * 255).byte().permute(1, 2, 0).contiguous().cpu().numpy())
-                network_gui.send(net_image_bytes, dataset.source_path)
-                if do_training and ((iteration < int(opt.iterations)) or not keep_alive):
-                    break
-            except Exception as e:
-                network_gui.conn = None
+        # if network_gui.conn == None:
+        #     network_gui.try_connect()
+        # while network_gui.conn != None:
+        #     try:
+        #         net_image_bytes = None
+        #         custom_cam, do_training, pipe.convert_SHs_python, pipe.compute_cov3D_python, keep_alive, scaling_modifer = network_gui.receive()
+        #         if custom_cam != None:
+        #             net_image = render(custom_cam, gaussians, pipe, background, scaling_modifer)["render"]
+        #             net_image_bytes = memoryview((torch.clamp(net_image, min=0, max=1.0) * 255).byte().permute(1, 2, 0).contiguous().cpu().numpy())
+        #         network_gui.send(net_image_bytes, dataset.source_path)
+        #         if do_training and ((iteration < int(opt.iterations)) or not keep_alive):
+        #             break
+        #     except Exception as e:
+        #         network_gui.conn = None
 
         iter_start.record()
 
@@ -98,7 +100,7 @@ def training(dataset, opt, pipe, testing_iterations, saving_iterations, checkpoi
             # Progress bar
             ema_loss_for_log = 0.4 * loss.item() + 0.6 * ema_loss_for_log
             if iteration % 10 == 0:
-                progress_bar.set_postfix({"Loss": f"{ema_loss_for_log:.{7}f}"})
+                progress_bar.set_postfix({"Loss": f"{ema_loss_for_log:.{7}f}", "Num Gaussians": f"{gaussians.get_xyz.shape[0]}"})
                 progress_bar.update(10)
             if iteration == opt.iterations:
                 progress_bar.close()
@@ -130,6 +132,17 @@ def training(dataset, opt, pipe, testing_iterations, saving_iterations, checkpoi
             if (iteration in checkpoint_iterations):
                 print("\n[ITER {}] Saving Checkpoint".format(iteration))
                 torch.save((gaussians.capture(), iteration), scene.model_path + "/chkpnt" + str(iteration) + ".pth")
+
+    end_time = time.time()
+    train_time = end_time - start_time
+    minutes, seconds = divmod(train_time, 60)
+    print(f">> Training time: {minutes:.0f} minutes {seconds:.0f} seconds")
+    with open(os.path.join(args.model_path, "train_time.txt"), 'a') as train_time_file:
+        train_time_file.write(f"{minutes:.0f} minutes {seconds:.0f} seconds")
+
+    print(f">> Final number of Gaussians: {gaussians.get_xyz.shape[0]}")
+    with open(os.path.join(args.model_path, "gs_num.txt"), 'a') as gs_num_file:
+        gs_num_file.write(f"{gaussians.get_xyz.shape[0]}")
 
 def prepare_output_and_logger(args):    
     if not args.model_path:
@@ -214,7 +227,7 @@ if __name__ == "__main__":
     safe_state(args.quiet)
 
     # Start GUI server, configure and run training
-    network_gui.init(args.ip, args.port)
+    # network_gui.init(args.ip, args.port)
     torch.autograd.set_detect_anomaly(args.detect_anomaly)
     training(lp.extract(args), op.extract(args), pp.extract(args), args.test_iterations, args.save_iterations, args.checkpoint_iterations, args.start_checkpoint, args.debug_from)
 

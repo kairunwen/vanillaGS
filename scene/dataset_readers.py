@@ -129,7 +129,7 @@ def storePly(path, xyz, rgb):
     ply_data = PlyData([vertex_element])
     ply_data.write(path)
 
-def readColmapSceneInfo(path, images, eval, llffhold=8):
+def readColmapSceneInfo(path, images, eval, n_view, llffhold=8):
     try:
         cameras_extrinsic_file = os.path.join(path, "sparse/0", "images.bin")
         cameras_intrinsic_file = os.path.join(path, "sparse/0", "cameras.bin")
@@ -146,8 +146,23 @@ def readColmapSceneInfo(path, images, eval, llffhold=8):
     cam_infos = sorted(cam_infos_unsorted.copy(), key = lambda x : x.image_name)
 
     if eval:
-        train_cam_infos = [c for idx, c in enumerate(cam_infos) if idx % llffhold != 0]
-        test_cam_infos = [c for idx, c in enumerate(cam_infos) if idx % llffhold == 0]
+        # train_cam_infos = [c for idx, c in enumerate(cam_infos) if idx % llffhold != 0]
+        # test_cam_infos = [c for idx, c in enumerate(cam_infos) if idx % llffhold == 0]
+
+        start_index = int(llffhold/2)
+        test_indices     = [idx for idx in range(start_index, len(cam_infos)) if idx % llffhold == 0]
+        non_test_indices = [idx for idx in range(start_index, len(cam_infos)) if idx % llffhold != 0]
+        if n_view is None or n_view == 0:
+            n_view = len(non_test_indices)
+        sparse_indices = np.linspace(0, len(non_test_indices) - 1, n_view, dtype=int)
+        train_indices = [non_test_indices[i] for i in sparse_indices]
+        # print(" - sparse_idx:         ", sparse_indices)
+        print(" - train_set_indices:  ", train_indices)
+        print(" - test_set_indices:   ", test_indices)
+
+        train_cam_infos = [cam_infos[i] for i in train_indices]
+        test_cam_infos = [cam_infos[i] for i in test_indices]
+
     else:
         train_cam_infos = cam_infos
         test_cam_infos = []
