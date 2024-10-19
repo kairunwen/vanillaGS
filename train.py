@@ -138,11 +138,11 @@ def training(dataset, opt, pipe, testing_iterations, saving_iterations, checkpoi
     minutes, seconds = divmod(train_time, 60)
     print(f">> Training time: {minutes:.0f} minutes {seconds:.0f} seconds")
     with open(os.path.join(args.model_path, "train_time.txt"), 'a') as train_time_file:
-        train_time_file.write(f"{minutes:.0f} minutes {seconds:.0f} seconds")
+        train_time_file.write(f"{minutes:.0f} minutes {seconds:.0f} seconds \n")
 
     print(f">> Final number of Gaussians: {gaussians.get_xyz.shape[0]}")
     with open(os.path.join(args.model_path, "gs_num.txt"), 'a') as gs_num_file:
-        gs_num_file.write(f"{gaussians.get_xyz.shape[0]}")
+        gs_num_file.write(f"{gaussians.get_xyz.shape[0]} \n")
 
 def prepare_output_and_logger(args):    
     if not args.model_path:

@@ -4,31 +4,32 @@ GPU_ID=3
 DATA_ROOT_DIR="/ssd2/zhiwen/projects/w_workspace/datasets/InstantSplat/collated_instantsplat_data/eval"
 DATASETS=(
     # mipnerf360
-    Tanks
+    #   Tanks
     # TT
     # MVimgNet
+    Mipnerf
     )
 
 
 SCENES=(
-    # garden
+    garden
     # Barn
-    Family
+    #   Family
     # Francis
     # Horse
     # Ignatius
     )
 
 N_VIEWS=(    
-    # 0
-    # 3
-    # 6
-    # 9
-    # 12
-    24
-    50
-    100
-    150
+    0
+    3
+    6
+    9
+    12
+    # 24
+     #50
+    #100
+    #150
     )
 
 # increase iteration to get better metrics (e.g. gs_train_iter=5000)
